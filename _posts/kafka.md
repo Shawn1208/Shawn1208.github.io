@@ -1,0 +1,66 @@
+# Java客户端向kafka发送protobuf格式的数据
+## 需求
+跨部门协作，通过Kafka进行沟通，我们是生产者，对方是消费者。因为对方部门后台是使用golang，所以默认是使用Protobuf来解析数据。
+
+## 解决方法
+**给Kafka创建一个Protobuf的序列化类，这样每次发送数据时就会序列化成Protobuf格式的。**
+
+1. 根据.proto文件生成对应的Java实体类。 
+
+```shell
+protoc --java_out=./  x.proto
+```
+java_out后面是生成的路径。  
+x.proto是愿型文件名。
+protoc的安装方法不做详述了，可以网上搜一下。
+
+2. 创建Kafka序列化类  
+
+假设生成的实体类叫Xproto.java
+```java
+public class ProtoSerializer implements Serializer<Xproto> {  
+  
+    @Override  
+  public void configure(Map<String, ?> configs, boolean isKey) {  
+  
+    }  
+  
+    @Override  
+  public byte[] serialize(String topic, Xproto data) {  
+        if (data == null) {    
+            return null;  
+        }  
+        return data.toByteArray();  
+  }  
+  
+    @Override  
+  public void close() {  
+  
+    }  
+}
+```
+
+3. 修改Kafka生产者的配置  
+```java
+@Configuration  
+@EnableKafka  
+@EnableConfigurationProperties(KafkaProperties.class)  
+public class KafkaAutoConfig {  
+  
+    @Autowired  
+  private KafkaProperties kafkaProperties;  
+  
+@Bean(name = "kafkaProducer")
+    public KafkaTemplate<String, String> kafkaTemplate() {
+        Map<String, Object> configProps = new HashMap<>();
+        configProps.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG,kafkaProperties.getBootstrapServers());
+        configProps.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        configProps.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, ProtoSerializer.class);
+        configProps.put(ProducerConfig.REQUEST_TIMEOUT_MS_CONFIG, 10000);
+        return new KafkaTemplate<>(new DefaultKafkaProducerFactory<>(configProps));
+    }
+}
+```
+
+## 参考
+[kafka序列化和反序列化-protoBuf](https://leejay.top/posts/kafka%E5%BA%8F%E5%88%97%E5%8C%96%E5%92%8C%E5%8F%8D%E5%BA%8F%E5%88%97%E5%8C%96-protoBuf/)

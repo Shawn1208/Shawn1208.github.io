@@ -1,0 +1,34 @@
+# Spring cloud集成Zipkin链路
+
+### 启动zipkin
+
+**用elasticsearch的方式启动**
+
+QUERY_PORT=9411 STORAGE_TYPE=elasticsearch ES_HOSTS=http://localhost:9200 java -jar zipkin.jar
+
+后台启动
+
+QUERY_PORT=9411 STORAGE_TYPE=elasticsearch ES_HOSTS=http://localhost:9200 nohup java -jar zipkin.jar &
+
+
+
+### 启动elasticsearch
+
+后台启动
+
+./elasticsearch -d
+
+
+
+### 查询elasticsearch数据
+
+curl -s 'localhost:9200/zipkin*span-2017-08-11/_search?q=_q:error=500'
+
+curl -s 'localhost:9200/zipkin*span-2020-05-21/_search'
+
+curl -s 'localhost:9200/zipkin*/_search'
+
+
+
+
+
